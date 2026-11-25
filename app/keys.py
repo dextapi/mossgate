@@ -20,7 +20,7 @@ def load_static():
             if line.startswith("ANTHROPIC_API_KEY="):
                 found.append(line.split("=", 1)[1].strip())
     _state["keys"] = [k for k in found if k]
-    _state["last"] = time.time()
+    _state["last"] = 0.0  # 0 => the first get() may harvest immediately
 
 
 def healthy():
