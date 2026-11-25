@@ -22,7 +22,7 @@
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-./start.sh                    # 127.0.0.1:8787
+./start.sh                    # 127.0.0.1:8787，启动时自动收割 key（key.env 不入库）
 ./claude-moss                 # Claude Code 直连；也可 ./claude-moss -p "..." --model haiku
 ```
 
@@ -76,6 +76,7 @@ flowchart LR
 - 该 key 属于单个 Azure paygo 资源，`api.anthropic.com` 直连 401；`claude-opus-5-5` 未部署（404 DeploymentNotFound）。
 - 收割通道是 `pythiav2-dev` 的 `/api/data/query`；prod 实例当前 DuckDB 已 fatal，需重启容器才恢复。dev 修好或下线后 `HARVEST` 失效，只能靠 `key.env`。
 - 单实例；多实例需把 key 池与配额桶外部化（当前按进程内存）。
+- `key.env` 被 gitignore；首次启动自动收割写入，也可 `POST /_key/refresh` 或 `python -m app.harvest` 手动刷新。
 
 ## 测试
 
