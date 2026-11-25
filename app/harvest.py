@@ -34,9 +34,12 @@ async def fetch_keys():
             root = found[m.group(1)].rstrip("/")
             config.UPSTREAM_BASE = root[:-10] if root.endswith("/anthropic") else root
     if found:
-        os.makedirs(os.path.dirname(config.KEY_FILE), exist_ok=True)
-        with open(config.KEY_FILE, "w") as f:
-            f.writelines(f"{k}={v}\n" for k, v in found.items())
+        try:
+            os.makedirs(os.path.dirname(config.KEY_FILE), exist_ok=True)
+            with open(config.KEY_FILE, "w") as f:
+                f.writelines(f"{k}={v}\n" for k, v in found.items())
+        except OSError:
+            pass  # read-only volume; keys stay in memory
     keys = [found["ANTHROPIC_API_KEY"]] if "ANTHROPIC_API_KEY" in found else []
     if "AZURE_ACCOUNT_KEY" in found:
         keys.append(("azure", found["AZURE_ACCOUNT_KEY"]))
