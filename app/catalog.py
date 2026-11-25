@@ -36,22 +36,22 @@ DEFAULT_CATALOG = [
     Model("claude-sonnet-4-6", "anthropic", 1_000_000, 64_000, 30, 30_000, ("sonnet", "default")),
     Model("claude-haiku-5-5", "anthropic", 200_000, 64_000, 1_000, 1_000_000, ("haiku", "small")),
     Model("gpt-4.1", "openai", 1_047_576, 32_768, 500, 500_000, ("gpt",)),
-    Model("gpt-5.6-luna-2026-07-09", "openai", 400_000, 128_000, 500, 500_000,
-          ("auto", "router", "gpt-5", "gpt-5.6-luna")),
+    Model("model-router-2025-11-18", "openai", 400_000, 128_000, 500, 500_000,
+          ("auto", "router", "gpt-5", "gpt-5.6-luna", "gpt-5.6-luna-2026-07-09")),
 ]
 
 # Degradation order when a model is exhausted.
 FALLBACK = {
     "claude-opus-4-8": ("claude-sonnet-4-6", "claude-haiku-5-5"),
     "claude-sonnet-4-6": ("claude-haiku-5-5",),
-    "gpt-4.1": ("gpt-5.6-luna-2026-07-09",),
-    "gpt-5.6-luna-2026-07-09": ("gpt-4.1",),
+    "gpt-4.1": ("model-router-2025-11-18",),
+    "model-router-2025-11-18": ("gpt-4.1",),
 }
 
 _PREFIX = [
     ("claude-opus", "claude-opus-4-8"), ("claude-sonnet", "claude-sonnet-4-6"),
     ("claude-haiku", "claude-haiku-5-5"), ("claude-fable", "claude-sonnet-4-6"),
-    ("gpt-4", "gpt-4.1"), ("gpt-5", "gpt-5.6-luna-2026-07-09"),
+    ("gpt-4", "gpt-4.1"), ("gpt-5", "model-router-2025-11-18"),
     ("o3", "gpt-4.1"), ("o4", "gpt-4.1"), ("gpt-", "gpt-4.1"),
 ]
 

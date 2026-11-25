@@ -9,7 +9,7 @@ from app.catalog import FALLBACK, catalog
 def test_catalog_resolution():
     assert catalog.resolve("opus") == "claude-opus-4-8"
     assert catalog.resolve("claude-sonnet-5-5") == "claude-sonnet-4-6"
-    assert catalog.resolve("gpt-5.3-turbo") == "gpt-5.6-luna-2026-07-09"
+    assert catalog.resolve("gpt-5.3-turbo") == "model-router-2025-11-18"
     assert catalog.resolve("totally-unknown") == "claude-sonnet-4-6"
     assert catalog.resolve(None) == "claude-sonnet-4-6"
 
