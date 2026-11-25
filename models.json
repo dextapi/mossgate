@@ -1,0 +1,9 @@
+{
+  "models": [],
+  "aliases": {
+    "claude-3-5-sonnet": "claude-sonnet-4-6",
+    "claude-3-5-haiku": "claude-haiku-5-5",
+    "claude-opus": "claude-opus-4-8",
+    "gpt-4o": "gpt-4.1"
+  }
+}

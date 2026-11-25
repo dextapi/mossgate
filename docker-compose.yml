@@ -1,0 +1,14 @@
+services:
+  mossgate:
+    build: .
+    image: ghcr.io/dextapi/mossgate:latest
+    ports:
+      - "8787:8787"
+    environment:
+      HOST: 0.0.0.0
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN:-}
+      MOSSGATE_KEYS: ${MOSSGATE_KEYS:-}
+      HARVEST: ${HARVEST:-1}
+      MAX_INFLIGHT: ${MAX_INFLIGHT:-256}
+    restart: unless-stopped
+    stop_grace_period: 20s

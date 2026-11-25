@@ -1,0 +1,9 @@
+#!/bin/sh
+# Claude Code through the local gateway. Usage: ./claude-moss [-p "prompt"] [--model opus|sonnet|haiku]
+PORT="${PORT:-8787}"
+curl -fsS "http://127.0.0.1:$PORT/_health" >/dev/null 2>&1 || { echo "gateway down; run ./start.sh" >&2; exit 1; }
+export ANTHROPIC_BASE_URL="http://127.0.0.1:$PORT"
+export ANTHROPIC_AUTH_TOKEN="${GATEWAY_TOKEN:-dummy}"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-sonnet}"
+export ANTHROPIC_SMALL_FAST_MODEL="${ANTHROPIC_SMALL_FAST_MODEL:-haiku}"
+exec claude "$@"
