@@ -41,6 +41,17 @@ Docker：
 docker compose up -d --build
 ```
 
+### VPS 部署
+
+```sh
+git clone https://github.com/dextapi/mossgate.git /opt/mossgate && cd /opt/mossgate
+mkdir -p data && chown -R 10001:10001 data      # 容器以 10001 运行
+printf 'GATEWAY_TOKEN=%s\n' "$(openssl rand -hex 24)" > .env && chmod 600 .env
+docker compose up -d --build
+```
+
+公网使用时把 `HOST` 留给 compose 的 `0.0.0.0`，客户端带 `Authorization: Bearer $GATEWAY_TOKEN`；`/_health` 与 `/metrics` 例外。凭据落在 `./data/key.env`（仅容器内可写）。
+
 ## 端点
 
 | 方法 | 路径 | |
