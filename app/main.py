@@ -59,6 +59,28 @@ async def _failure(request, exc):
                         exc.status if exc.status >= 400 else 502)
 
 
+@app.post("/v1/embeddings", dependencies=[Depends(auth_required)])
+async def embeddings(request: Request):
+    body = orjson.loads(await request.body() or b"{}")
+    spec = catalog.embedding_model(body.get("model"))
+    if spec is None:
+        return JSONResponse({"error": {"message": "no embedding deployment"}}, 404)
+    text = body.get("input")
+    estimate = len(text) // 4 + 1 if isinstance(text, str) else 1
+    metrics.count("requests", endpoint="embeddings", model=spec.id)
+
+    def payload(m):
+        body["model"] = m
+        return "/openai/v1/embeddings", body
+
+    resp, _ = await upstream.open("POST", None, payload, spec.id, False,
+                                  _passthrough_headers(request), estimate)
+    data = await resp.aread()
+    return Response(data, status_code=resp.status_code,
+                    media_type=resp.headers.get("content-type", "application/json"),
+                    headers=_relay_headers(resp))
+
+
 @app.get("/v1/models", dependencies=[Depends(auth_required)])
 async def models():
     return {"object": "list", "data": [m.to_openai() for m in catalog.list()]}
@@ -142,6 +164,9 @@ async def chat(request: Request):
     body = orjson.loads(await request.body() or b"{}")
     model_id = catalog.resolve(body.get("model"))
     spec = catalog.models[model_id]
+    if spec.kind != "chat":
+        model_id = "gpt-4.1"
+        spec = catalog.models[model_id]
     stream = bool(body.get("stream"))
     headers = _passthrough_headers(request)
     estimate = translate.estimate_tokens(body)

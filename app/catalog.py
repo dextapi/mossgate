@@ -6,9 +6,11 @@ from . import config
 
 
 class Model:
-    __slots__ = ("id", "dialect", "ctx", "max_out", "rpm", "tpm", "aliases", "created")
+    __slots__ = ("id", "dialect", "ctx", "max_out", "rpm", "tpm", "aliases", "created", "kind")
 
-    def __init__(self, id, dialect, ctx, max_out, rpm, tpm, aliases=(), created=1764000000):
+    def __init__(self, id, dialect, ctx, max_out, rpm, tpm, aliases=(), created=1764000000,
+                 kind="chat"):
+        self.kind = kind
         self.id = id
         self.dialect = dialect  # "anthropic" | "openai"
         self.ctx = ctx
@@ -27,6 +29,7 @@ class Model:
             "context_window": self.ctx,
             "max_output_tokens": self.max_out,
             "x-dialect": self.dialect,
+            "kind": self.kind,
         }
 
 
@@ -38,6 +41,8 @@ DEFAULT_CATALOG = [
     Model("gpt-4.1", "openai", 1_047_576, 32_768, 500, 500_000, ("gpt",)),
     Model("model-router-2025-11-18", "openai", 400_000, 128_000, 500, 500_000,
           ("auto", "router", "gpt-5", "gpt-5.6-luna", "gpt-5.6-luna-2026-07-09")),
+    Model("text-embedding-3-large", "openai", 8_191, 0, 500, 500_000,
+          ("embed", "embedding", "embeddings"), kind="embedding"),
 ]
 
 # Degradation order when a model is exhausted.
@@ -95,6 +100,12 @@ class Catalog:
 
     def list(self):
         return list(self.models.values())
+
+    def embedding_model(self, name):
+        m = self.lookup(name)
+        if m and m.kind == "embedding":
+            return m
+        return self.models.get("text-embedding-3-large")
 
     def fallback(self, name):
         return [m for m in FALLBACK.get(name, ()) if m in self.models]

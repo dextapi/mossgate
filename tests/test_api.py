@@ -121,6 +121,25 @@ def test_upstream_status_is_preserved(monkeypatch, calls):
     assert r.status_code == 400
 
 
+def test_embeddings_route_forces_embedding_deployment(calls):
+    r = client.post("/v1/embeddings", json={"model": "sonnet", "input": "hi"})
+    assert r.status_code == 200
+    assert calls[0]["path"] == "/openai/v1/embeddings"
+    assert calls[0]["payload"]["model"] == "text-embedding-3-large"
+
+
+def test_embeddings_listed_with_kind():
+    models = {m["id"]: m for m in client.get("/v1/models").json()["data"]}
+    assert models["text-embedding-3-large"]["kind"] == "embedding"
+    assert models["gpt-4.1"]["kind"] == "chat"
+
+
+def test_chat_with_embedding_model_falls_back_to_chat(calls):
+    client.post("/v1/chat/completions", json={"model": "embed",
+                                              "messages": [{"role": "user", "content": "x"}]})
+    assert calls[0]["payload"]["model"] == "gpt-4.1"
+
+
 def test_upstream_failure_maps_to_error(monkeypatch):
     async def boom(*a, **kw):
         raise upstream.Failure(429, b'{"error":"slow down"}')
