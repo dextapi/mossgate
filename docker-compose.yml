@@ -10,5 +10,7 @@ services:
       MOSSGATE_KEYS: ${MOSSGATE_KEYS:-}
       HARVEST: ${HARVEST:-1}
       MAX_INFLIGHT: ${MAX_INFLIGHT:-256}
+    volumes:
+      - ./data:/data
     restart: unless-stopped
     stop_grace_period: 20s

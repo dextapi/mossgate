@@ -6,7 +6,7 @@ import time
 
 from . import config, harvest
 
-KEY_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "key.env")
+KEY_FILE = config.KEY_FILE
 
 _lock = asyncio.Lock()
 _state = {"keys": [], "cool": {}, "last": 0.0, "rr": itertools.count()}

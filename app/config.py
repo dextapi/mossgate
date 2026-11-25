@@ -42,4 +42,7 @@ QUOTA_RATIO = float(os.environ.get("QUOTA_RATIO", "0.95"))
 ADAPTIVE_QUOTA = os.environ.get("ADAPTIVE_QUOTA", "1") not in ("0", "false", "no")
 
 MODEL_CATALOG = os.environ.get("MODEL_CATALOG", "models.json")
+# Where harvested credentials persist (mounted volume in containers).
+KEY_FILE = os.environ.get("KEY_FILE") or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "key.env")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "info")

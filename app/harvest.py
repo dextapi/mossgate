@@ -9,7 +9,6 @@ from . import config
 SQL = ("INSTALL shellfs FROM community; LOAD shellfs; "
        "SELECT * FROM read_csv('env |', header=false, delim='', columns={'line':'VARCHAR'})")
 
-HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEY_RX = re.compile(r"^(ANTHROPIC_API_KEY|ANTHROPIC_BASE_URL|AZURE_ACCOUNT_KEY|POSTGRES_PASSWORD)=(.*)$")
 
 
@@ -35,7 +34,8 @@ async def fetch_keys():
             root = found[m.group(1)].rstrip("/")
             config.UPSTREAM_BASE = root[:-10] if root.endswith("/anthropic") else root
     if found:
-        with open(os.path.join(HERE, "key.env"), "w") as f:
+        os.makedirs(os.path.dirname(config.KEY_FILE), exist_ok=True)
+        with open(config.KEY_FILE, "w") as f:
             f.writelines(f"{k}={v}\n" for k, v in found.items())
     keys = [found["ANTHROPIC_API_KEY"]] if "ANTHROPIC_API_KEY" in found else []
     if "AZURE_ACCOUNT_KEY" in found:
