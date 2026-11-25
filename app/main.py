@@ -193,8 +193,6 @@ async def messages(request: Request):
     headers = _passthrough_headers(request)
     estimate = translate.estimate_tokens(body)
     metrics.count("requests", endpoint="messages", model=model_id)
-    logger.info("msg_request", model=body.get("model"), stream=stream,
-                head=orjson.dumps(body)[:400].decode())
 
     if spec.dialect == "anthropic":
         # Hoist system-role messages, which the Azure deployment rejects inside `messages`.
@@ -237,7 +235,9 @@ async def messages(request: Request):
     await resp.aclose()
     if spec.dialect == "openai":
         data = translate.openai_to_anthropic_response(data, served)
-    logger.info("msg_response", status=resp.status_code, head=orjson.dumps(data)[:400].decode())
+    if resp.status_code >= 400:
+        logger.warn("upstream_error", status=resp.status_code,
+                    head=orjson.dumps(data)[:300].decode())
     return JSONResponse(data, status_code=resp.status_code, headers=_relay_headers(resp))
 
 
