@@ -22,7 +22,8 @@ def calls(monkeypatch):
 
     async def fake_open(method, path, make_payload, model, stream, headers, estimate):
         path_, payload = make_payload(model)
-        seen.append({"path": path_, "payload": payload, "model": model, "stream": stream})
+        seen.append({"path": path_, "payload": payload, "model": model, "stream": stream,
+                     "headers": headers})
         return httpx.Response(200, json={"ok": True}, request=httpx.Request("POST", path_)), model
 
     monkeypatch.setattr(upstream, "open", fake_open)
@@ -100,6 +101,24 @@ def test_unknown_model_degrades_not_404s(calls):
                                                   "messages": [{"role": "user", "content": "x"}]})
     assert r.status_code == 200
     assert calls[0]["payload"]["model"] == "gpt-4.1"
+
+
+def test_unknown_betas_are_dropped(calls):
+    client.post("/v1/messages", json={"model": "sonnet", "max_tokens": 8,
+                                      "messages": [{"role": "user", "content": "x"}]},
+                headers={"anthropic-beta": "context-1m-2025-08-07,advisor-tool-2026-03-01"})
+    assert calls[0]["headers"]["anthropic-beta"] == "context-1m-2025-08-07"
+
+
+def test_upstream_status_is_preserved(monkeypatch, calls):
+    async def bad(*a, **kw):
+        body = {"type": "error", "error": {"type": "invalid_request_error", "message": "nope"}}
+        return httpx.Response(400, json=body, request=httpx.Request("POST", "/")), "claude-sonnet-4-6"
+
+    monkeypatch.setattr(upstream, "open", bad)
+    r = client.post("/v1/messages", json={"model": "sonnet", "max_tokens": 8,
+                                          "messages": [{"role": "user", "content": "x"}]})
+    assert r.status_code == 400
 
 
 def test_upstream_failure_maps_to_error(monkeypatch):

@@ -97,12 +97,23 @@ async def refresh():
     return {"harvested": len(found), **keys.stats()}
 
 
+# Betas the deployment accepts; unknown ones make the upstream reply 400.
+BETAS = {"claude-code-20250219", "interleaved-thinking-2025-05-14",
+         "fine-grained-tool-streaming-2025-05-14", "oauth-2025-04-20",
+         "prompt-caching-2024-07-31", "structured-outputs-2025-11-13",
+         "effort-2025-11-24", "context-1m-2025-08-07"}
+
+
 def _passthrough_headers(request: Request):
     out = {}
-    for name in ("anthropic-version", "anthropic-beta", "x-request-id", "user-agent"):
+    for name in ("anthropic-version", "x-request-id", "user-agent"):
         value = request.headers.get(name)
         if value:
             out[name] = value
+    betas = [b.strip() for b in request.headers.get("anthropic-beta", "").split(",") if b.strip()]
+    kept = [b for b in betas if b in BETAS]
+    if kept:
+        out["anthropic-beta"] = ",".join(kept)
     out.setdefault("anthropic-version", "2023-06-01")
     return out
 
@@ -157,15 +168,15 @@ async def chat(request: Request):
             gen = _raw_lines(resp)
         else:
             gen = translate.anthropic_stream_to_openai(upstream.sse_events(resp), served)
-        return StreamingResponse(_stream(gen, resp, "openai"), media_type="text/event-stream",
-                                 headers=_relay_headers(resp))
+        return StreamingResponse(_stream(gen, resp, "openai"), status_code=resp.status_code,
+                                 media_type="text/event-stream", headers=_relay_headers(resp))
 
     data = orjson.loads(await resp.aread())
     await resp.aclose()
     metrics.count("tokens", n=(data.get("usage") or {}).get("prompt_tokens", 0) or 0, kind="in")
     if spec.dialect == "anthropic":
         data = translate.anthropic_to_openai_response(data, served)
-    return JSONResponse(data, headers=_relay_headers(resp))
+    return JSONResponse(data, status_code=resp.status_code, headers=_relay_headers(resp))
 
 
 async def _raw_lines(resp):
@@ -182,6 +193,8 @@ async def messages(request: Request):
     headers = _passthrough_headers(request)
     estimate = translate.estimate_tokens(body)
     metrics.count("requests", endpoint="messages", model=model_id)
+    logger.info("msg_request", model=body.get("model"), stream=stream,
+                head=orjson.dumps(body)[:400].decode())
 
     if spec.dialect == "anthropic":
         # Hoist system-role messages, which the Azure deployment rejects inside `messages`.
@@ -217,14 +230,15 @@ async def messages(request: Request):
                     else:
                         yield None, data
             gen = translate.openai_stream_to_anthropic(_events(), served)
-        return StreamingResponse(_stream(gen, resp, "anthropic"), media_type="text/event-stream",
-                                 headers=_relay_headers(resp))
+        return StreamingResponse(_stream(gen, resp, "anthropic"), status_code=resp.status_code,
+                                 media_type="text/event-stream", headers=_relay_headers(resp))
 
     data = orjson.loads(await resp.aread())
     await resp.aclose()
     if spec.dialect == "openai":
         data = translate.openai_to_anthropic_response(data, served)
-    return JSONResponse(data, headers=_relay_headers(resp))
+    logger.info("msg_response", status=resp.status_code, head=orjson.dumps(data)[:400].decode())
+    return JSONResponse(data, status_code=resp.status_code, headers=_relay_headers(resp))
 
 
 @app.get("/")
